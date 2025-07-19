@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  body {
+    @apply bg-gradient-to-br from-pastel-blue via-pastel-purple to-pastel-pink min-h-screen font-sans;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/20 backdrop-blur-md border border-white/20 rounded-xl shadow-lg;
+  }
+  
+  .primary-btn {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200;
+  }
+  
+  .secondary-btn {
+    @apply bg-white/30 backdrop-blur-sm text-gray-700 px-6 py-3 rounded-lg font-medium border border-white/40 hover:bg-white/40 transition-all duration-200;
+  }
+}

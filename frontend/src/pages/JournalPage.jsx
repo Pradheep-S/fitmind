@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Brain, Heart, Lightbulb, Loader2 } from 'lucide-react';
 import { submitJournal } from '../services/journalService';
+import { useAuth } from '../contexts/AuthContext';
 
 const JournalPage = ({ onJournalSubmitted }) => {
   const [journalText, setJournalText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [wordCount, setWordCount] = useState(0);
+  const { checkToken, isAuthenticated, user } = useAuth();
 
   const handleTextChange = (e) => {
     const text = e.target.value;
@@ -25,9 +27,23 @@ const JournalPage = ({ onJournalSubmitted }) => {
       if (onJournalSubmitted) {
         onJournalSubmitted(result);
       }
+      // Clear the text after successful submission
+      setJournalText('');
+      setWordCount(0);
     } catch (error) {
       console.error('Failed to submit journal:', error);
-      // Show error feedback
+      
+      // Check if it's an authentication error
+      if (error.response?.status === 401) {
+        alert('Your session has expired. Please log in again.');
+        // You might want to redirect to login or refresh the token
+        localStorage.removeItem('fitmind-token');
+        window.location.reload();
+      } else if (error.response?.status === 400) {
+        alert('There was an issue with your journal entry. Please check that it\'s at least 10 characters long.');
+      } else {
+        alert('Failed to submit journal entry. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -92,20 +108,22 @@ const JournalPage = ({ onJournalSubmitted }) => {
                   {wordCount} words
                 </span>
                 
-                <motion.button
-                  onClick={handleSubmit}
-                  disabled={!journalText.trim() || isSubmitting}
-                  className={`primary-btn ${(!journalText.trim() || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  whileHover={journalText.trim() && !isSubmitting ? { scale: 1.05 } : {}}
-                  whileTap={journalText.trim() && !isSubmitting ? { scale: 0.95 } : {}}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="animate-spin mr-2" size={20} />
-                  ) : (
-                    <Send className="mr-2" size={20} />
-                  )}
-                  {isSubmitting ? 'Analyzing...' : 'Submit Journal'}
-                </motion.button>
+                <div className="flex gap-2">
+                  <motion.button
+                    onClick={handleSubmit}
+                    disabled={!journalText.trim() || isSubmitting}
+                    className={`primary-btn ${(!journalText.trim() || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    whileHover={journalText.trim() && !isSubmitting ? { scale: 1.05 } : {}}
+                    whileTap={journalText.trim() && !isSubmitting ? { scale: 0.95 } : {}}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="animate-spin mr-2" size={20} />
+                    ) : (
+                      <Send className="mr-2" size={20} />
+                    )}
+                    {isSubmitting ? 'Analyzing...' : 'Submit Journal'}
+                  </motion.button>
+                </div>
               </div>
             </div>
           </motion.div>

@@ -1,20 +1,34 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PenTool, Sparkles, Calendar, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { getQuote } from '../services/quoteService';
+import { getJournalStats } from '../services/journalService';
+import { useAuth } from '../contexts/AuthContext';
 
-const HomePage = ({ onStartJournal }) => {
+const HomePage = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [currentStreak, setCurrentStreak] = useState(3); // Example streak
+  const [stats, setStats] = useState({
+    currentStreak: 0,
+    totalEntries: 0,
+    averageMood: 0
+  });
 
   useEffect(() => {
-    const fetchQuote = async () => {
+    const fetchData = async () => {
       try {
+        // Fetch quote
         const dailyQuote = await getQuote();
         setQuote(dailyQuote);
+        
+        // Fetch user stats
+        const userStats = await getJournalStats('week');
+        setStats(userStats);
       } catch (error) {
-        console.error('Failed to fetch quote:', error);
+        console.error('Failed to fetch data:', error);
         setQuote({
           text: "The journey of a thousand miles begins with a single step.",
           author: "Lao Tzu"
@@ -24,7 +38,35 @@ const HomePage = ({ onStartJournal }) => {
       }
     };
 
-    fetchQuote();
+    fetchData();
+  }, []);
+
+  const handleStartJournal = () => {
+    navigate('/journal');
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch quote
+        const dailyQuote = await getQuote();
+        setQuote(dailyQuote);
+        
+        // Fetch user stats
+        const userStats = await getJournalStats('week');
+        setStats(userStats);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        setQuote({
+          text: "The journey of a thousand miles begins with a single step.",
+          author: "Lao Tzu"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   return (
@@ -35,22 +77,19 @@ const HomePage = ({ onStartJournal }) => {
       transition={{ duration: 0.6 }}
     >
       {/* Welcome Header */}
-      <motion.div 
-        className="text-center mb-12"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.6 }}
-      >
-        <h1 className="text-5xl font-display font-bold text-gray-800 mb-4">
-          Welcome back! 🌟
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Take a moment to reflect, write, and discover insights about your day. 
-          Your mental wellness journey continues here.
-        </p>
-      </motion.div>
-
-      {/* Daily Quote Card */}
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+        >
+          <h1 className="text-4xl font-display font-bold text-gray-800 mb-2">
+            Welcome back, {user?.name?.split(' ')[0] || 'Friend'} 👋
+          </h1>
+          <p className="text-gray-600">
+            Ready to continue your mindfulness journey?
+          </p>
+        </motion.div>      {/* Daily Quote Card */}
       <motion.div 
         className="glass-card p-8 mb-8"
         initial={{ opacity: 0, scale: 0.9 }}
@@ -98,7 +137,7 @@ const HomePage = ({ onStartJournal }) => {
             <div>
               <p className="text-sm text-gray-600 mb-1">Current Streak</p>
               <p className="text-3xl font-bold text-primary-600 streak-animation">
-                {currentStreak} days
+                {stats.currentStreak || 0} days
               </p>
             </div>
             <Calendar className="text-primary-500" size={32} />
@@ -115,7 +154,7 @@ const HomePage = ({ onStartJournal }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">This Month</p>
-              <p className="text-3xl font-bold text-green-600">12 entries</p>
+              <p className="text-3xl font-bold text-green-600">{stats.totalEntries || 0} entries</p>
             </div>
             <PenTool className="text-green-500" size={32} />
           </div>
@@ -130,8 +169,8 @@ const HomePage = ({ onStartJournal }) => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Mood Trend</p>
-              <p className="text-3xl font-bold text-purple-600">📈 Positive</p>
+              <p className="text-sm text-gray-600 mb-1">Average Mood</p>
+              <p className="text-3xl font-bold text-purple-600">{stats.averageMood || 0}/10</p>
             </div>
             <TrendingUp className="text-purple-500" size={32} />
           </div>
@@ -146,7 +185,7 @@ const HomePage = ({ onStartJournal }) => {
         transition={{ delay: 1, duration: 0.6 }}
       >
         <motion.button
-          onClick={onStartJournal}
+          onClick={handleStartJournal}
           className="primary-btn text-xl px-12 py-4 mb-4"
           whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
           whileTap={{ scale: 0.95 }}

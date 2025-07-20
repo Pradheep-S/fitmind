@@ -10,97 +10,146 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor to include auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('fitmind-token');
+    console.log('Token from localStorage:', token ? `${token.substring(0, 20)}...` : 'No token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle auth errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('fitmind-token');
+      window.location.reload(); // Force login
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Journal service functions
 export const submitJournal = async (text) => {
   try {
+    console.log('Submitting journal with text:', text.substring(0, 50) + '...');
     const response = await api.post('/journal', {
       text,
       date: new Date().toISOString(),
     });
-    return response.data;
+    
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || 'Failed to submit journal');
+    }
   } catch (error) {
     console.error('Error submitting journal:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
     
-    // Mock response for development when backend is not available
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          _id: Date.now().toString(),
-          text,
-          date: new Date().toISOString(),
-          mood: getMockMood(text),
-          confidence: 0.85,
-          suggestions: getMockSuggestions(text),
-          summary: getMockSummary(text),
-        });
-      }, 2000); // Simulate API delay
-    });
+    // If we're in development and backend is not available, show mock data
+    if (error.code === 'ECONNREFUSED' || error.response?.status >= 500) {
+      console.warn('Backend unavailable, using mock data');
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            _id: Date.now().toString(),
+            text,
+            date: new Date().toISOString(),
+            mood: getMockMood(text),
+            confidence: 0.85,
+            suggestions: getMockSuggestions(text),
+            summary: getMockSummary(text),
+          });
+        }, 2000); // Simulate API delay
+      });
+    }
+    
+    throw error;
   }
 };
 
 export const getAllJournals = async () => {
   try {
     const response = await api.get('/journal');
-    return response.data;
+    
+    if (response.data.success) {
+      return response.data.data.entries;
+    } else {
+      throw new Error(response.data.message || 'Failed to fetch journals');
+    }
   } catch (error) {
     console.error('Error fetching journals:', error);
     
-    // Mock data for development
-    return [
-      {
-        _id: '1',
-        date: new Date().toISOString(),
-        text: 'Today was a wonderful day filled with gratitude and joy. I accomplished my morning routine and felt really productive. The weather was perfect, and I had a great conversation with a friend.',
-        mood: 'happy',
-        confidence: 0.9,
-        suggestions: [
-          'Keep up the positive energy by maintaining your morning routine',
-          'Consider journaling about what specifically made you feel grateful',
-          'Schedule more social time since connections boost your mood'
-        ],
-        summary: 'A highly positive and productive day with strong social connections and successful routine completion.'
-      },
-      {
-        _id: '2',
-        date: new Date(Date.now() - 86400000).toISOString(),
-        text: 'Feeling a bit overwhelmed with work lately. There are so many deadlines approaching and I\'m struggling to keep up. Need to find better balance between work and personal life.',
-        mood: 'stressed',
-        confidence: 0.85,
-        suggestions: [
-          'Try time-blocking techniques to manage your workload better',
-          'Take regular 5-minute breaks throughout your workday',
-          'Consider meditation or deep breathing exercises',
-          'Set clearer boundaries between work and personal time'
-        ],
-        summary: 'Work stress is impacting well-being. Focus needed on time management and work-life balance strategies.'
-      }
-    ];
+    // If we're in development and backend is not available, show empty array
+    if (error.code === 'ECONNREFUSED' || error.response?.status >= 500) {
+      console.warn('Backend unavailable, returning empty journal list');
+      return [];
+    }
+    
+    throw error;
   }
-};
+};;
 
 export const getJournalStats = async (timeRange = 'week') => {
   try {
     const response = await api.get(`/journal/stats?range=${timeRange}`);
-    return response.data;
+    
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || 'Failed to fetch stats');
+    }
   } catch (error) {
     console.error('Error fetching journal stats:', error);
     
-    // Mock stats for development
-    return {
-      totalEntries: 15,
-      currentStreak: 5,
-      longestStreak: 12,
-      averageMood: 7.2,
-      moodTrend: generateMockMoodTrend(),
-      moodDistribution: [
-        { name: 'Happy', value: 35, color: '#10B981' },
-        { name: 'Calm', value: 25, color: '#3B82F6' },
-        { name: 'Grateful', value: 20, color: '#8B5CF6' },
-        { name: 'Stressed', value: 15, color: '#F59E0B' },
-        { name: 'Sad', value: 5, color: '#EF4444' },
-      ],
-      weeklyReflection: `This ${timeRange} showed great emotional balance with a positive trend. You've been consistently grateful and maintaining good mental wellness habits. Keep focusing on the activities that bring you joy and consider incorporating more stress-relief techniques.`
-    };
+    // If we're in development and backend is not available, show mock data
+    if (error.code === 'ECONNREFUSED' || error.response?.status >= 500) {
+      console.warn('Backend unavailable, using mock stats');
+      return getMockStats(timeRange);
+    }
+    
+    throw error;
+  }
+};
+
+export const exportAllJournals = async () => {
+  try {
+    const response = await api.get('/journal/export');
+    
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || 'Failed to export journals');
+    }
+  } catch (error) {
+    console.error('Error exporting journals:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
+    
+    // If export endpoint fails, fall back to getAllJournals
+    if (error.response?.status === 400 || error.response?.status === 404 || error.response?.status === 401) {
+      console.warn('Export endpoint failed, falling back to getAllJournals');
+      return await getAllJournals();
+    }
+    
+    // If we're in development and backend is not available, use getAllJournals as fallback
+    if (error.code === 'ECONNREFUSED' || error.response?.status >= 500) {
+      console.warn('Backend unavailable, using getAllJournals for export');
+      return await getAllJournals();
+    }
+    
+    throw error;
   }
 };
 
@@ -209,6 +258,83 @@ const generateMockMoodTrend = () => {
   }
   
   return data;
+};
+
+// Helper function for mock stats when backend is unavailable
+const getMockStats = (timeRange) => {
+  return {
+    totalEntries: 15,
+    currentStreak: 5,
+    longestStreak: 12,
+    averageMood: 7.2,
+    moodDistribution: [
+      { name: 'Happy', value: 25, color: '#10B981' },
+      { name: 'Grateful', value: 20, color: '#8B5CF6' },
+      { name: 'Calm', value: 18, color: '#06B6D4' },
+      { name: 'Thoughtful', value: 15, color: '#F59E0B' },
+      { name: 'Stressed', value: 12, color: '#EF4444' },
+      { name: 'Excited', value: 10, color: '#EC4899' }
+    ],
+    moodTrend: generateMoodTrendData(timeRange),
+    weeklyReflection: {
+      insight: "You've shown great consistency in your journaling practice this week. Your entries reflect a balanced emotional state with moments of both challenge and gratitude.",
+      recommendation: "Continue your daily writing routine and consider exploring the themes of work-life balance that appear frequently in your entries.",
+      moodPattern: "Your mood tends to be more positive in the mornings, with some stress peaks during weekday afternoons."
+    }
+  };
+};
+
+// Utility function to download journal data as JSON or text file
+export const downloadJournalData = async (format = 'json') => {
+  try {
+    const journals = await exportAllJournals();
+    
+    let content;
+    let filename;
+    let mimeType;
+    
+    if (format === 'json') {
+      content = JSON.stringify(journals, null, 2);
+      filename = `fitmind-journals-${new Date().toISOString().split('T')[0]}.json`;
+      mimeType = 'application/json';
+    } else if (format === 'txt') {
+      content = journals.map(journal => {
+        const date = new Date(journal.date).toLocaleDateString();
+        return `Date: ${date}\nMood: ${journal.mood || 'Not analyzed'}\nEntry:\n${journal.text}\n\n---\n\n`;
+      }).join('');
+      filename = `fitmind-journals-${new Date().toISOString().split('T')[0]}.txt`;
+      mimeType = 'text/plain';
+    } else if (format === 'csv') {
+      const headers = 'Date,Mood,Sentiment,Summary,Entry Text\n';
+      const rows = journals.map(journal => {
+        const date = new Date(journal.date).toLocaleDateString();
+        const mood = journal.mood || '';
+        const sentiment = journal.aiAnalysis?.sentiment || '';
+        const summary = (journal.summary || '').replace(/"/g, '""');
+        const text = journal.text.replace(/"/g, '""').replace(/\n/g, ' ');
+        return `"${date}","${mood}","${sentiment}","${summary}","${text}"`;
+      }).join('\n');
+      content = headers + rows;
+      filename = `fitmind-journals-${new Date().toISOString().split('T')[0]}.csv`;
+      mimeType = 'text/csv';
+    }
+    
+    // Create blob and download
+    const blob = new Blob([content], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true, filename, count: journals.length };
+  } catch (error) {
+    console.error('Error downloading journal data:', error);
+    throw error;
+  }
 };
 
 export default api;

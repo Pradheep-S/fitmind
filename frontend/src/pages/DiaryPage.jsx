@@ -18,25 +18,8 @@ const DiaryPage = () => {
         setEntries(journalEntries);
       } catch (error) {
         console.error('Failed to fetch entries:', error);
-        // Set mock data for development
-        setEntries([
-          {
-            _id: '1',
-            date: new Date().toISOString(),
-            text: 'Today was a wonderful day filled with gratitude and joy. I accomplished my morning routine and felt really productive.',
-            mood: 'happy',
-            suggestions: ['Keep up the positive energy!', 'Consider meditation to maintain this mood'],
-            summary: 'A productive and joyful day with accomplishments in your routine.'
-          },
-          {
-            _id: '2',
-            date: new Date(Date.now() - 86400000).toISOString(),
-            text: 'Feeling a bit overwhelmed with work lately. Need to find better balance.',
-            mood: 'stressed',
-            suggestions: ['Take regular breaks', 'Try deep breathing exercises', 'Consider time blocking'],
-            summary: 'Work stress affecting your well-being. Need to focus on work-life balance.'
-          }
-        ]);
+        // Show empty state for new users or when backend is unavailable
+        setEntries([]);
       } finally {
         setLoading(false);
       }

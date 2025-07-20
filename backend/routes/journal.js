@@ -1,25 +1,42 @@
 const express = require('express');
 const router = express.Router();
 const Journal = require('../models/Journal');
+const User = require('../models/User');
 const aiService = require('../services/aiService');
+const auth = require('../middleware/auth');
+const { body, validationResult, query } = require('express-validator');
 
 // @route   POST /api/journal
 // @desc    Create a new journal entry with AI analysis
-// @access  Public (can add auth later)
-router.post('/', async (req, res) => {
+// @access  Private
+router.post('/', auth, [
+  body('text')
+    .notEmpty()
+    .withMessage('Journal text is required')
+    .isLength({ min: 10 })
+    .withMessage('Journal entry must be at least 10 characters long')
+    .trim()
+], async (req, res) => {
   try {
-    const { text, date } = req.body;
-
-    if (!text || !text.trim()) {
-      return res.status(400).json({ message: 'Journal text is required' });
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
     }
 
+    const { text, date } = req.body;
+
     // Get AI analysis
-    console.log('Analyzing journal entry...');
+    console.log('Analyzing journal entry for user:', req.user._id);
     const analysis = await aiService.analyzeJournal(text);
     
     // Create new journal entry
     const journalEntry = new Journal({
+      user: req.user._id,
       date: date || new Date(),
       text: text.trim(),
       mood: analysis.mood,
@@ -36,11 +53,19 @@ router.post('/', async (req, res) => {
 
     const savedEntry = await journalEntry.save();
     
+    // Update user stats
+    await req.user.updateStats();
+    
     console.log('Journal entry saved successfully');
-    res.status(201).json(savedEntry);
+    res.status(201).json({
+      success: true,
+      message: 'Journal entry created successfully',
+      data: savedEntry
+    });
   } catch (error) {
     console.error('Error creating journal entry:', error);
     res.status(500).json({ 
+      success: false,
       message: 'Failed to create journal entry', 
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
@@ -48,18 +73,49 @@ router.post('/', async (req, res) => {
 });
 
 // @route   GET /api/journal
-// @desc    Get all journal entries
-// @access  Public
-router.get('/', async (req, res) => {
+// @desc    Get all journal entries for authenticated user
+// @access  Private
+router.get('/', auth, [
+  query('page')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Page must be a positive integer'),
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 50 })
+    .withMessage('Limit must be between 1 and 50'),
+  query('mood')
+    .optional()
+    .isIn(['happy', 'sad', 'anxious', 'grateful', 'excited', 'calm', 'stressed', 'thoughtful', 'content', 'overwhelmed', 'other', 'all'])
+    .withMessage('Invalid mood filter'),
+  query('startDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Start date must be a valid ISO date'),
+  query('endDate')
+    .optional()
+    .isISO8601()
+    .withMessage('End date must be a valid ISO date')
+], async (req, res) => {
   try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const mood = req.query.mood;
     const startDate = req.query.startDate;
     const endDate = req.query.endDate;
 
-    // Build filter object
-    const filter = {};
+    // Build filter object - always filter by user
+    const filter = { user: req.user._id };
     if (mood && mood !== 'all') {
       filter.mood = mood;
     }
@@ -71,20 +127,27 @@ router.get('/', async (req, res) => {
 
     const entries = await Journal.find(filter)
       .sort({ date: -1 })
-      .limit(limit * 1)
+      .limit(limit)
       .skip((page - 1) * limit);
 
     const total = await Journal.countDocuments(filter);
 
     res.json({
-      entries,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total
+      success: true,
+      data: {
+        entries,
+        pagination: {
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+          total,
+          limit
+        }
+      }
     });
   } catch (error) {
     console.error('Error fetching journal entries:', error);
     res.status(500).json({ 
+      success: false,
       message: 'Failed to fetch journal entries',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
@@ -92,10 +155,25 @@ router.get('/', async (req, res) => {
 });
 
 // @route   GET /api/journal/stats
-// @desc    Get journal statistics and analytics
-// @access  Public
-router.get('/stats', async (req, res) => {
+// @desc    Get journal statistics and analytics for authenticated user
+// @access  Private
+router.get('/stats', auth, [
+  query('range')
+    .optional()
+    .isIn(['week', 'month', 'year'])
+    .withMessage('Range must be week, month, or year')
+], async (req, res) => {
   try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
     const range = req.query.range || 'week'; // week, month, year
     const now = new Date();
     let startDate;
@@ -114,14 +192,15 @@ router.get('/stats', async (req, res) => {
         startDate = new Date(now.setDate(now.getDate() - 7));
     }
 
-    // Get entries in range
+    // Get entries in range for the authenticated user
     const entries = await Journal.find({
+      user: req.user._id,
       date: { $gte: startDate }
     }).sort({ date: -1 });
 
     // Calculate stats
     const totalEntries = entries.length;
-    const totalWords = entries.reduce((sum, entry) => sum + entry.wordCount, 0);
+    const totalWords = entries.reduce((sum, entry) => sum + (entry.wordCount || 0), 0);
     
     // Mood distribution
     const moodCounts = {};
@@ -132,7 +211,7 @@ router.get('/stats', async (req, res) => {
     const moodDistribution = Object.entries(moodCounts).map(([mood, count]) => ({
       name: mood.charAt(0).toUpperCase() + mood.slice(1),
       value: count,
-      percentage: Math.round((count / totalEntries) * 100),
+      percentage: totalEntries > 0 ? Math.round((count / totalEntries) * 100) : 0,
       color: getMoodColor(mood)
     }));
 
@@ -202,21 +281,25 @@ router.get('/stats', async (req, res) => {
     const weeklyReflection = generateWeeklyReflection(entries, moodDistribution);
 
     res.json({
-      totalEntries,
-      totalWords,
-      averageWordsPerEntry: totalEntries > 0 ? Math.round(totalWords / totalEntries) : 0,
-      currentStreak,
-      longestStreak,
-      moodDistribution,
-      moodTrend,
-      averageMood: moodTrend.length > 0 ? 
-        Math.round(moodTrend.reduce((sum, day) => sum + day.mood, 0) / moodTrend.length * 10) / 10 : 0,
-      weeklyReflection,
-      range
+      success: true,
+      data: {
+        totalEntries,
+        totalWords,
+        averageWordsPerEntry: totalEntries > 0 ? Math.round(totalWords / totalEntries) : 0,
+        currentStreak: req.user.stats.currentStreak,
+        longestStreak: req.user.stats.longestStreak,
+        moodDistribution,
+        moodTrend,
+        averageMood: moodTrend.length > 0 ? 
+          Math.round(moodTrend.reduce((sum, day) => sum + day.mood, 0) / moodTrend.length * 10) / 10 : 0,
+        weeklyReflection,
+        range
+      }
     });
   } catch (error) {
     console.error('Error fetching journal stats:', error);
     res.status(500).json({ 
+      success: false,
       message: 'Failed to fetch journal statistics',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
@@ -224,48 +307,151 @@ router.get('/stats', async (req, res) => {
 });
 
 // @route   GET /api/journal/:id
-// @desc    Get a specific journal entry
-// @access  Public
-router.get('/:id', async (req, res) => {
+// @desc    Get a specific journal entry for authenticated user
+// @access  Private
+router.get('/:id', auth, async (req, res) => {
   try {
-    const entry = await Journal.findById(req.params.id);
+    const entry = await Journal.findOne({ 
+      _id: req.params.id, 
+      user: req.user._id 
+    });
     
     if (!entry) {
-      return res.status(404).json({ message: 'Journal entry not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Journal entry not found' 
+      });
     }
 
-    res.json(entry);
+    res.json({
+      success: true,
+      data: entry
+    });
   } catch (error) {
     console.error('Error fetching journal entry:', error);
     if (error.name === 'CastError') {
-      return res.status(400).json({ message: 'Invalid journal entry ID' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid journal entry ID' 
+      });
     }
     res.status(500).json({ 
+      success: false,
       message: 'Failed to fetch journal entry',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });
 
-// @route   DELETE /api/journal/:id
-// @desc    Delete a journal entry
-// @access  Public
-router.delete('/:id', async (req, res) => {
+// @route   PUT /api/journal/:id
+// @desc    Update a journal entry
+// @access  Private
+router.put('/:id', auth, [
+  body('text')
+    .optional()
+    .isLength({ min: 10 })
+    .withMessage('Journal entry must be at least 10 characters long')
+    .trim()
+], async (req, res) => {
   try {
-    const entry = await Journal.findById(req.params.id);
-    
-    if (!entry) {
-      return res.status(404).json({ message: 'Journal entry not found' });
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
     }
 
-    await Journal.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Journal entry deleted successfully' });
+    const entry = await Journal.findOne({ 
+      _id: req.params.id, 
+      user: req.user._id 
+    });
+    
+    if (!entry) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Journal entry not found' 
+      });
+    }
+
+    const { text } = req.body;
+    
+    if (text) {
+      // Re-analyze if text is updated
+      const analysis = await aiService.analyzeJournal(text);
+      
+      entry.text = text;
+      entry.mood = analysis.mood;
+      entry.confidence = analysis.confidence;
+      entry.suggestions = analysis.suggestions;
+      entry.summary = analysis.summary;
+      entry.aiAnalysis = {
+        emotions: analysis.emotions,
+        keywords: analysis.keywords,
+        sentiment: analysis.sentiment,
+        sentimentScore: analysis.sentimentScore
+      };
+    }
+
+    await entry.save();
+
+    res.json({
+      success: true,
+      message: 'Journal entry updated successfully',
+      data: entry
+    });
+  } catch (error) {
+    console.error('Error updating journal entry:', error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid journal entry ID' 
+      });
+    }
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to update journal entry',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// @route   DELETE /api/journal/:id
+// @desc    Delete a journal entry for authenticated user
+// @access  Private
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const entry = await Journal.findOneAndDelete({ 
+      _id: req.params.id, 
+      user: req.user._id 
+    });
+    
+    if (!entry) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Journal entry not found' 
+      });
+    }
+
+    // Update user stats after deletion
+    await req.user.updateStats();
+
+    res.json({ 
+      success: true,
+      message: 'Journal entry deleted successfully' 
+    });
   } catch (error) {
     console.error('Error deleting journal entry:', error);
     if (error.name === 'CastError') {
-      return res.status(400).json({ message: 'Invalid journal entry ID' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid journal entry ID' 
+      });
     }
     res.status(500).json({ 
+      success: false,
       message: 'Failed to delete journal entry',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
@@ -324,5 +510,54 @@ function generateWeeklyReflection(entries, moodDistribution) {
 
   return reflection;
 }
+
+// @route   GET /api/journal/export
+// @desc    Export all journal entries for the authenticated user
+// @access  Private
+router.get('/export', auth, async (req, res) => {
+  try {
+    console.log('Export endpoint hit by user:', req.user._id);
+    
+    const journals = await Journal.find({ user: req.user._id })
+      .sort({ date: -1 })
+      .lean();
+
+    console.log(`Found ${journals.length} journal entries for export`);
+
+    // Format the data for export
+    const exportData = journals.map(journal => ({
+      id: journal._id,
+      date: journal.date,
+      text: journal.text,
+      mood: journal.mood,
+      confidence: journal.confidence,
+      sentiment: journal.aiAnalysis?.sentiment,
+      sentimentScore: journal.aiAnalysis?.sentimentScore,
+      emotions: journal.aiAnalysis?.emotions || [],
+      keywords: journal.aiAnalysis?.keywords || [],
+      suggestions: journal.suggestions || [],
+      summary: journal.summary,
+      createdAt: journal.createdAt,
+      updatedAt: journal.updatedAt
+    }));
+
+    console.log(`Exporting ${exportData.length} journal entries for user ${req.user._id}`);
+    
+    res.json({
+      success: true,
+      message: 'Journal entries exported successfully',
+      data: exportData,
+      count: exportData.length,
+      exportedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error exporting journal entries:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to export journal entries', 
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
 
 module.exports = router;

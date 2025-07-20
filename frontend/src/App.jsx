@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 
+// Context
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+
 // Components
-import Navbar from './components/Navbar'
 import Layout from './components/Layout'
 
 // Pages  
@@ -12,87 +14,58 @@ import JournalPage from './pages/JournalPage'
 import DiaryPage from './pages/DiaryPage'
 import StatsPage from './pages/StatsPage'
 import SettingsPage from './pages/SettingsPage'
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
 
-function App() {
-  const [currentPage, setCurrentPage] = useState('home')
-  const [journalEntries, setJournalEntries] = useState([])
+// Main App Component that uses authentication
+function AppContent() {
+  const { isAuthenticated, loading } = useAuth();
 
-  // Load saved page from localStorage
-  useEffect(() => {
-    const savedPage = localStorage.getItem('fitmind-current-page')
-    if (savedPage) {
-      setCurrentPage(savedPage)
-    }
-  }, [])
-
-  // Save current page to localStorage
-  useEffect(() => {
-    localStorage.setItem('fitmind-current-page', currentPage)
-  }, [currentPage])
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page)
-  }
-
-  const handleStartJournal = () => {
-    setCurrentPage('journal')
-  }
-
-  const handleJournalSubmitted = (journalData) => {
-    setJournalEntries(prev => [journalData, ...prev])
-    // You could redirect to diary or home after successful submission
-    setTimeout(() => {
-      setCurrentPage('diary')
-    }, 2000)
-  }
-
-  const renderPage = () => {
-    const pageProps = {
-      key: currentPage, // Important for animation transitions
-    }
-
-    switch (currentPage) {
-      case 'home':
-        return <HomePage onStartJournal={handleStartJournal} {...pageProps} />
-      case 'journal':
-        return <JournalPage onJournalSubmitted={handleJournalSubmitted} {...pageProps} />
-      case 'diary':
-        return <DiaryPage {...pageProps} />
-      case 'stats':
-        return <StatsPage {...pageProps} />
-      case 'settings':
-        return <SettingsPage {...pageProps} />
-      default:
-        return <HomePage onStartJournal={handleStartJournal} {...pageProps} />
-    }
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading FitMind...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen">
-      <Navbar currentPage={currentPage} onPageChange={handlePageChange} />
-      
-      <Layout>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentPage}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {renderPage()}
-          </motion.div>
-        </AnimatePresence>
-      </Layout>
-
-      {/* Background decorative elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pastel-purple rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-pastel-pink rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-40 left-40 w-80 h-80 bg-pastel-blue rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+    <Router>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        {!isAuthenticated ? (
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        ) : (
+          <Layout>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/journal" element={<JournalPage />} />
+              <Route path="/diary" element={<DiaryPage />} />
+              <Route path="/stats" element={<StatsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Layout>
+        )}
       </div>
-    </div>
+    </Router>
+  );
+}
+
+// Main App with AuthProvider
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 
-export default App
+export default App;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Brain, Heart, Lightbulb, Loader2 } from 'lucide-react';
+import { Send, Brain, Heart, Lightbulb, Loader2, Plus } from 'lucide-react';
 import { submitJournal } from '../services/journalService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -9,6 +9,7 @@ const JournalPage = ({ onJournalSubmitted }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [wordCount, setWordCount] = useState(0);
+  const [showWritingArea, setShowWritingArea] = useState(true);
   const { checkToken, isAuthenticated, user } = useAuth();
 
   const handleTextChange = (e) => {
@@ -27,6 +28,8 @@ const JournalPage = ({ onJournalSubmitted }) => {
       if (onJournalSubmitted) {
         onJournalSubmitted(result);
       }
+      // Hide the writing area after successful submission
+      setShowWritingArea(false);
       // Clear the text after successful submission
       setJournalText('');
       setWordCount(0);
@@ -65,6 +68,13 @@ const JournalPage = ({ onJournalSubmitted }) => {
     return moodMap[mood?.toLowerCase()] || '🌟';
   };
 
+  const handleNewEntry = () => {
+    setShowWritingArea(true);
+    setAnalysis(null);
+    setJournalText('');
+    setWordCount(0);
+  };
+
   return (
     <motion.div 
       className="max-w-7xl mx-auto py-8"
@@ -73,12 +83,13 @@ const JournalPage = ({ onJournalSubmitted }) => {
       transition={{ duration: 0.6 }}
     >
       <div className={`grid gap-8 transition-all duration-700 ${
-        analysis ? 'grid-cols-1 lg:grid-cols-5' : 'grid-cols-1 lg:grid-cols-3'
+        analysis ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'
       }`}>
-        {/* Writing Area */}
-        <div className={`transition-all duration-700 ${
-          analysis ? 'lg:col-span-2' : 'lg:col-span-2'
-        }`}>
+        {/* Writing Area - Show only when showWritingArea is true */}
+        {showWritingArea && (
+          <div className={`transition-all duration-700 ${
+            analysis ? 'lg:col-span-1' : 'lg:col-span-2'
+          }`}>
           <motion.div 
             className="glass-card p-8"
             initial={{ opacity: 0, x: -20 }}
@@ -139,10 +150,29 @@ const JournalPage = ({ onJournalSubmitted }) => {
             </div>
           </motion.div>
         </div>
+        )}
+
+        {/* Add New Entry Button - Show only when writing area is hidden and analysis exists */}
+        {!showWritingArea && analysis && (
+          <div className="flex justify-center">
+            <motion.button
+              onClick={handleNewEntry}
+              className="primary-btn flex items-center space-x-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Plus size={20} />
+              <span>Add Another Entry for Today</span>
+            </motion.button>
+          </div>
+        )}
 
         {/* Analysis Sidebar */}
         <div className={`transition-all duration-700 ${
-          analysis ? 'lg:col-span-3' : 'lg:col-span-1'
+          analysis && !showWritingArea ? 'lg:col-span-1' : (analysis ? 'lg:col-span-3' : 'lg:col-span-1')
         }`}>
           <AnimatePresence>
             {analysis ? (
@@ -171,11 +201,7 @@ const JournalPage = ({ onJournalSubmitted }) => {
                       </div>
                     </div>
                     <motion.button
-                      onClick={() => {
-                        setAnalysis(null);
-                        setJournalText('');
-                        setWordCount(0);
-                      }}
+                      onClick={handleNewEntry}
                       className="secondary-btn text-sm py-2 px-4"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}

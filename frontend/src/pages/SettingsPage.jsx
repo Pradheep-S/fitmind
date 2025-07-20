@@ -433,19 +433,8 @@ const SettingsPage = ({ user }) => {
           )}
         </motion.div>
 
-        {/* About */}
-        <motion.div 
-          className="glass-card p-6 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9, duration: 0.6 }}
-        >
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">About FitMind</h3>
-          <p className="text-gray-600 mb-2">Version 1.0.0</p>
-          <p className="text-sm text-gray-500">
-            Built with ❤️ to support your mental wellness journey through mindful journaling.
-          </p>
-        </motion.div>
+        
+        
       </div>
     </motion.div>
   );

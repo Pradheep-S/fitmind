@@ -14,8 +14,7 @@ import JournalPage from './pages/JournalPage'
 import DiaryPage from './pages/DiaryPage'
 import StatsPage from './pages/StatsPage'
 import SettingsPage from './pages/SettingsPage'
-import LoginPage from './pages/LoginPage'
-import SignupPage from './pages/SignupPage'
+import AuthContainer from './pages/AuthContainer'
 
 // Main App Component that uses authentication
 function AppContent() {
@@ -38,8 +37,8 @@ function AppContent() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         {!isAuthenticated ? (
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/login" element={<AuthContainer />} />
+            <Route path="/signup" element={<AuthContainer />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         ) : (

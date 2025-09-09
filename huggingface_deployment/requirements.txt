@@ -1,0 +1,9 @@
+# Gradio for Hugging Face Spaces
+gradio==4.7.1
+
+# Machine Learning
+torch
+transformers
+
+# Additional dependencies
+pydantic

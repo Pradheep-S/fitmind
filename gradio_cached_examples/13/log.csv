@@ -1,0 +1,16 @@
+Prediction Result,Confidence,All Probabilities,flag,username,timestamp
+**Predicted Class:** LABEL_1,**Confidence:** 0.9967 (99.67%),"**All Probabilities:**
+- LABEL_0: 0.0033
+- LABEL_1: 0.9967",,,2025-09-08 23:26:03.219975
+**Predicted Class:** LABEL_0,**Confidence:** 0.9990 (99.90%),"**All Probabilities:**
+- LABEL_0: 0.9990
+- LABEL_1: 0.0010",,,2025-09-08 23:26:04.974081
+**Predicted Class:** LABEL_0,**Confidence:** 0.8010 (80.10%),"**All Probabilities:**
+- LABEL_0: 0.8010
+- LABEL_1: 0.1990",,,2025-09-08 23:26:06.820194
+**Predicted Class:** LABEL_1,**Confidence:** 0.9950 (99.50%),"**All Probabilities:**
+- LABEL_0: 0.0050
+- LABEL_1: 0.9950",,,2025-09-08 23:26:08.722471
+**Predicted Class:** LABEL_0,**Confidence:** 0.9986 (99.86%),"**All Probabilities:**
+- LABEL_0: 0.9986
+- LABEL_1: 0.0014",,,2025-09-08 23:26:11.324368

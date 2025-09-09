@@ -1,0 +1,13 @@
+nohup: ignoring input
+INFO:     Started server process [27496]
+INFO:     Waiting for application startup.
+INFO:app:Using device: cpu
+INFO:app:Loading tokenizer...
+INFO:app:Loading model...
+INFO:app:Model and tokenizer loaded successfully!
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [27496]

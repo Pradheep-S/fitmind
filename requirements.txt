@@ -1,0 +1,14 @@
+# FastAPI and web server
+fastapi
+uvicorn[standard]
+
+# Machine Learning - Install PyTorch separately
+# Run: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+transformers
+
+# Additional dependencies
+pydantic
+python-multipart
+
+# Optional: For better performance and deployment
+gunicorn

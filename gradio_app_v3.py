@@ -1,6 +1,5 @@
 """
-Gradio wrapper for BERT Text Classification FastAPI
-This creates a Gradio interface that internally uses the FastAPI app for Hugging Face Spaces deployment.
+Gradio 3.x compatible interface for BERT Text Classification
 """
 
 import gradio as gr
@@ -107,7 +106,7 @@ def predict_text(text):
         # Format results
         result = f"**Predicted Class:** {predicted_class}"
         confidence_text = f"**Confidence:** {confidence:.4f} ({confidence*100:.2f}%)"
-        probabilities_text = "**All Probabilities:**\n" + "\n".join([f"- {k}: {v}" for k, v in prob_dict.items()])
+        probabilities_text = "**All Probabilities:**\\n" + "\\n".join([f"- {k}: {v}" for k, v in prob_dict.items()])
         
         return result, confidence_text, probabilities_text
         
@@ -132,7 +131,7 @@ def get_model_info():
     
     if hasattr(model.config, 'id2label'):
         class_labels = model.config.id2label
-        info += f"\n**Class Labels:**\n" + "\n".join([f"- {k}: {v}" for k, v in class_labels.items()])
+        info += f"\\n**Class Labels:**\\n" + "\\n".join([f"- {k}: {v}" for k, v in class_labels.items()])
     
     return info
 
@@ -145,9 +144,9 @@ if not model_loaded:
 else:
     print("Model loaded successfully!")
 
-# Create Gradio interface
-with gr.Blocks(title="BERT Text Classification", theme=gr.themes.Soft()) as demo:
-    gr.Markdown("# 🤖 BERT Text Classification API")
+# Create Gradio interface using Gradio 3.x syntax
+with gr.Blocks(title="BERT Text Classification") as demo:
+    gr.Markdown("# 🤖 BERT Text Classification")
     gr.Markdown("Enter text below to classify it using a pre-trained BERT model.")
     
     with gr.Tab("Text Classification"):
@@ -156,8 +155,7 @@ with gr.Blocks(title="BERT Text Classification", theme=gr.themes.Soft()) as demo
                 text_input = gr.Textbox(
                     label="Enter text to classify",
                     placeholder="Type your text here...",
-                    lines=3,
-                    max_lines=10
+                    lines=3
                 )
                 classify_btn = gr.Button("Classify Text", variant="primary")
                 
@@ -169,53 +167,21 @@ with gr.Blocks(title="BERT Text Classification", theme=gr.themes.Soft()) as demo
         # Example inputs
         gr.Examples(
             examples=[
-                ["This movie is absolutely amazing! I loved every minute of it."],
-                ["This product is terrible and I hate it."],
-                ["The weather today is cloudy."],
-                ["I'm feeling great today!"],
-                ["This is the worst experience I've ever had."]
+                "This movie is absolutely amazing! I loved every minute of it.",
+                "This product is terrible and I hate it.",
+                "The weather today is cloudy.", 
+                "I'm feeling great today!",
+                "This is the worst experience I've ever had."
             ],
             inputs=text_input,
             outputs=[result_output, confidence_output, probabilities_output],
-            fn=predict_text,
-            cache_examples=False
+            fn=predict_text
         )
     
     with gr.Tab("Model Information"):
         model_info = gr.Markdown(value=get_model_info() if model_loaded else "Model not loaded")
         refresh_btn = gr.Button("Refresh Model Info")
         refresh_btn.click(fn=get_model_info, outputs=model_info)
-    
-    with gr.Tab("API Usage"):
-        gr.Markdown("""
-        ## 🔗 API Endpoints
-        
-        This Space also provides REST API endpoints that you can use programmatically:
-        
-        ### POST /predict
-        ```bash
-        curl -X POST "https://your-space-name.hf.space/predict" \\
-          -H "Content-Type: application/json" \\
-          -d '{"text": "Your text here"}'
-        ```
-        
-        ### Response Format
-        ```json
-        {
-          "predicted_class": "LABEL_1",
-          "confidence": 0.8945,
-          "probabilities": {
-            "LABEL_0": 0.1055,
-            "LABEL_1": 0.8945
-          }
-        }
-        ```
-        
-        ### Other Endpoints
-        - `GET /health` - Health check
-        - `GET /model-info` - Model information
-        - `GET /docs` - Interactive API documentation
-        """)
     
     # Connect the classify button
     classify_btn.click(
@@ -232,6 +198,5 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=7860,
         share=False,
-        show_error=True,
-        debug=True
+        show_error=True
     )

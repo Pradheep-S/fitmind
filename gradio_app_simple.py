@@ -1,6 +1,6 @@
 """
-Gradio wrapper for BERT Text Classification FastAPI
-This creates a Gradio interface that internally uses the FastAPI app for Hugging Face Spaces deployment.
+Simple Gradio interface for BERT Text Classification
+This version avoids FastAPI to prevent Pydantic conflicts.
 """
 
 import gradio as gr
@@ -147,7 +147,7 @@ else:
 
 # Create Gradio interface
 with gr.Blocks(title="BERT Text Classification", theme=gr.themes.Soft()) as demo:
-    gr.Markdown("# 🤖 BERT Text Classification API")
+    gr.Markdown("# 🤖 BERT Text Classification")
     gr.Markdown("Enter text below to classify it using a pre-trained BERT model.")
     
     with gr.Tab("Text Classification"):
@@ -166,7 +166,7 @@ with gr.Blocks(title="BERT Text Classification", theme=gr.themes.Soft()) as demo
                 confidence_output = gr.Markdown(label="Confidence")
                 probabilities_output = gr.Markdown(label="All Probabilities")
         
-        # Example inputs
+        # Example inputs (without caching to avoid conflicts)
         gr.Examples(
             examples=[
                 ["This movie is absolutely amazing! I loved every minute of it."],
@@ -175,47 +175,13 @@ with gr.Blocks(title="BERT Text Classification", theme=gr.themes.Soft()) as demo
                 ["I'm feeling great today!"],
                 ["This is the worst experience I've ever had."]
             ],
-            inputs=text_input,
-            outputs=[result_output, confidence_output, probabilities_output],
-            fn=predict_text,
-            cache_examples=False
+            inputs=text_input
         )
     
     with gr.Tab("Model Information"):
         model_info = gr.Markdown(value=get_model_info() if model_loaded else "Model not loaded")
         refresh_btn = gr.Button("Refresh Model Info")
         refresh_btn.click(fn=get_model_info, outputs=model_info)
-    
-    with gr.Tab("API Usage"):
-        gr.Markdown("""
-        ## 🔗 API Endpoints
-        
-        This Space also provides REST API endpoints that you can use programmatically:
-        
-        ### POST /predict
-        ```bash
-        curl -X POST "https://your-space-name.hf.space/predict" \\
-          -H "Content-Type: application/json" \\
-          -d '{"text": "Your text here"}'
-        ```
-        
-        ### Response Format
-        ```json
-        {
-          "predicted_class": "LABEL_1",
-          "confidence": 0.8945,
-          "probabilities": {
-            "LABEL_0": 0.1055,
-            "LABEL_1": 0.8945
-          }
-        }
-        ```
-        
-        ### Other Endpoints
-        - `GET /health` - Health check
-        - `GET /model-info` - Model information
-        - `GET /docs` - Interactive API documentation
-        """)
     
     # Connect the classify button
     classify_btn.click(
@@ -232,6 +198,5 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=7860,
         share=False,
-        show_error=True,
-        debug=True
+        show_error=True
     )

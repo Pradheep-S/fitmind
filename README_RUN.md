@@ -63,7 +63,7 @@ uvicorn app:app --host 0.0.0.0 --port 8000
 ## 6. **Run the Gradio App (Web UI & Spaces)**
 
 ```bash
-python gradio_app.py
+python3 gradio_app.py
 ```
 
 - Visit [http://localhost:7860](http://localhost:7860) for the Gradio web interface

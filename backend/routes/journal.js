@@ -302,6 +302,12 @@ router.get('/stats', auth, [
     // Generate AI reflection
     const weeklyReflection = generateWeeklyReflection(entries, moodDistribution);
 
+    // Generate additional insights
+    const insights = generateInsights(entries, moodDistribution, totalWords);
+
+    // Generate reminders and goals (mock data for now - could be from user preferences)
+    const reminders = generateReminders(entries);
+
     res.json({
       success: true,
       data: {
@@ -315,6 +321,8 @@ router.get('/stats', auth, [
         averageMood: moodTrend.length > 0 ? 
           Math.round(moodTrend.reduce((sum, day) => sum + day.mood, 0) / moodTrend.length * 10) / 10 : 0,
         weeklyReflection,
+        insights,
+        reminders,
         range
       }
     });
@@ -505,16 +513,28 @@ router.delete('/:id', auth, async (req, res) => {
 // Helper functions
 function getMoodColor(mood) {
   const colors = {
-    happy: '#10B981',
-    grateful: '#8B5CF6',
-    excited: '#F59E0B',
-    calm: '#3B82F6',
-    content: '#06D6A0',
-    thoughtful: '#6B7280',
-    stressed: '#EF4444',
-    anxious: '#F97316',
-    sad: '#8B5A7D',
-    overwhelmed: '#DC2626'
+    happy: '#10B981',        // Green
+    grateful: '#8B5CF6',     // Purple
+    excited: '#F59E0B',      // Amber
+    calm: '#3B82F6',         // Blue
+    content: '#06D6A0',      // Teal
+    thoughtful: '#6B7280',   // Gray
+    stressed: '#EF4444',     // Red
+    anxious: '#F97316',      // Orange
+    sad: '#8B5A7D',          // Purple-pink
+    overwhelmed: '#DC2626',  // Dark red
+    frustrated: '#B45309',   // Brown
+    hopeful: '#059669',      // Emerald
+    lonely: '#7C3AED',       // Violet
+    confident: '#0891B2',    // Cyan
+    uncertain: '#9CA3AF',    // Cool gray
+    motivated: '#16A34A',    // Green
+    tired: '#6B7280',        // Neutral gray
+    peaceful: '#0EA5E9',     // Sky blue
+    joyful: '#FBBF24',       // Yellow
+    reflective: '#8B5CF6',   // Indigo
+    burnout: '#991B1B',      // Dark red
+    other: '#94A3B8'         // Slate gray
   };
   return colors[mood] || '#6B7280';
 }
@@ -553,6 +573,122 @@ function generateWeeklyReflection(entries, moodDistribution) {
   }
 
   return reflection;
+}
+
+function generateInsights(entries, moodDistribution, totalWords) {
+  if (entries.length === 0) {
+    return null;
+  }
+
+  // Find most productive day
+  const dayEntries = {};
+  entries.forEach(entry => {
+    const day = new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long' });
+    dayEntries[day] = (dayEntries[day] || 0) + 1;
+  });
+  const mostProductiveDay = Object.entries(dayEntries).reduce((a, b) => dayEntries[a[0]] > dayEntries[b[0]] ? a : b)[0];
+
+  // Calculate emotional trend
+  const avgSentiment = entries.reduce((sum, entry) => sum + entry.aiAnalysis.sentimentScore, 0) / entries.length;
+  const emotionalTrend = avgSentiment > 0.2 ? 'positive' : avgSentiment < -0.2 ? 'negative' : 'neutral';
+
+  // Calculate consistency score (based on entries in last 7 days)
+  const last7Days = new Date();
+  last7Days.setDate(last7Days.getDate() - 7);
+  const recentEntries = entries.filter(entry => new Date(entry.date) >= last7Days);
+  const consistencyScore = Math.min(Math.round((recentEntries.length / 7) * 100), 100);
+
+  // Get top emotions
+  const topEmotions = moodDistribution
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 3)
+    .map(mood => mood.name.toLowerCase());
+
+  // Determine journaling frequency
+  const avgWordsPerEntry = Math.round(totalWords / entries.length);
+  const journalingFrequency = avgWordsPerEntry > 200 ? 'High' : avgWordsPerEntry > 100 ? 'Medium' : 'Low';
+
+  // Calculate wellness indicators
+  const positiveWords = ['happy', 'grateful', 'excited', 'calm', 'content', 'peaceful', 'joyful', 'hopeful', 'confident', 'motivated'];
+  const negativeWords = ['stressed', 'anxious', 'sad', 'overwhelmed', 'frustrated', 'lonely', 'uncertain', 'tired', 'burnout'];
+  
+  const positiveCount = entries.filter(entry => 
+    positiveWords.some(word => entry.text.toLowerCase().includes(word))
+  ).length;
+  
+  const stressCount = entries.filter(entry => 
+    negativeWords.some(word => entry.text.toLowerCase().includes(word))
+  ).length;
+
+  const gratitudeCount = entries.filter(entry => 
+    entry.text.toLowerCase().includes('grateful') || 
+    entry.text.toLowerCase().includes('thankful') ||
+    entry.text.toLowerCase().includes('appreciate')
+  ).length;
+
+  return {
+    mostProductiveDay,
+    averageWordsPerDay: avgWordsPerEntry,
+    emotionalTrend,
+    consistencyScore,
+    topEmotions,
+    journalingFrequency,
+    wellnessIndicators: {
+      positiveThoughts: Math.min(Math.round((positiveCount / entries.length) * 100), 100),
+      stressLevels: Math.min(Math.round((stressCount / entries.length) * 100), 100),
+      gratitudePractice: Math.min(Math.round((gratitudeCount / entries.length) * 100), 100),
+      selfCare: Math.max(65, Math.min(Math.round(avgSentiment * 50 + 50), 100)) // Based on sentiment
+    }
+  };
+}
+
+function generateReminders(entries) {
+  // This could be enhanced to read from user preferences or goals in the database
+  // For now, generating smart reminders based on journal patterns
+  
+  const recentStress = entries.slice(0, 3).some(entry => 
+    entry.mood === 'stressed' || entry.mood === 'anxious' || entry.mood === 'overwhelmed'
+  );
+
+  const lowActivity = entries.length < 3;
+  
+  let currentGoals = [
+    'Practice daily gratitude',
+    'Maintain consistent journaling',
+    'Focus on emotional awareness'
+  ];
+
+  let todos = [
+    'Reflect on today\'s positive moments',
+    'Set aside 10 minutes for mindfulness',
+    'Plan one self-care activity'
+  ];
+
+  if (recentStress) {
+    todos.unshift('Try a breathing exercise');
+    todos.push('Consider talking to someone you trust');
+    currentGoals.push('Manage stress levels');
+  }
+
+  if (lowActivity) {
+    todos.unshift('Write a short journal entry');
+    currentGoals.push('Build a consistent journaling habit');
+  }
+
+  const achievements = [];
+  if (entries.length >= 5) achievements.push(`${entries.length} journal entries completed!`);
+  if (entries.some(entry => entry.wordCount > 200)) achievements.push('Detailed journaling - great depth!');
+  
+  const positiveEntries = entries.filter(entry => entry.aiAnalysis.sentimentScore > 0.3);
+  if (positiveEntries.length > entries.length * 0.6) {
+    achievements.push('Maintaining positive mindset');
+  }
+
+  return {
+    currentGoals: currentGoals.slice(0, 3),
+    todos: todos.slice(0, 4),
+    achievements: achievements.length > 0 ? achievements : ['Keep journaling to unlock achievements!']
+  };
 }
 
 // @route   GET /api/journal/export

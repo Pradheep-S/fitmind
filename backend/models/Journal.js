@@ -20,7 +20,7 @@ const journalSchema = new mongoose.Schema({
   mood: {
     type: String,
     required: false,
-    enum: ['happy', 'sad', 'anxious', 'grateful', 'excited', 'calm', 'stressed', 'thoughtful', 'content', 'overwhelmed', 'other'],
+    enum: ['happy', 'sad', 'anxious', 'grateful', 'excited', 'calm', 'stressed', 'thoughtful', 'content', 'overwhelmed', 'frustrated', 'hopeful', 'lonely', 'confident', 'uncertain', 'other'],
     default: 'thoughtful'
   },
   confidence: {
@@ -29,9 +29,23 @@ const journalSchema = new mongoose.Schema({
     max: 1,
     default: 0
   },
-  suggestions: [{
-    type: String,
-    trim: true
+  suggestions: {
+    type: mongoose.Schema.Types.Mixed,
+    default: []
+  },
+  enhancedSuggestions: [{
+    category: {
+      type: String,
+      enum: ['immediate', 'daily_practice', 'lifestyle', 'professional', 'social'],
+      default: 'daily_practice'
+    },
+    action: String,
+    reason: String,
+    timeframe: {
+      type: String,
+      enum: ['now', 'today', 'this_week', 'ongoing'],
+      default: 'ongoing'
+    }
   }],
   summary: {
     type: String,
@@ -40,7 +54,12 @@ const journalSchema = new mongoose.Schema({
   aiAnalysis: {
     emotions: [{
       emotion: String,
-      confidence: Number
+      confidence: Number,
+      intensity: {
+        type: String,
+        enum: ['low', 'medium', 'high'],
+        default: 'medium'
+      }
     }],
     keywords: [String],
     sentiment: {
@@ -53,6 +72,70 @@ const journalSchema = new mongoose.Schema({
       min: -1,
       max: 1,
       default: 0
+    },
+    psychologicalThemes: [{
+      theme: String,
+      confidence: Number,
+      description: String
+    }],
+    stressIndicators: {
+      level: {
+        type: String,
+        enum: ['low', 'medium', 'high'],
+        default: 'low'
+      },
+      triggers: [String],
+      physicalSigns: [String],
+      cognitivePatterns: [String]
+    },
+    positiveElements: [{
+      element: String,
+      description: String
+    }],
+    growthOpportunities: [{
+      area: String,
+      description: String
+    }],
+    riskFactors: [{
+      factor: String,
+      level: {
+        type: String,
+        enum: ['low', 'medium', 'high'],
+        default: 'low'
+      },
+      description: String
+    }],
+    categories: [{
+      category: String,
+      subcategory: String,
+      confidence: Number
+    }],
+    labels: [String],
+    urgencyLevel: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+      default: 'low'
+    },
+    followUpRecommended: {
+      type: Boolean,
+      default: false
+    },
+    cbtInsights: {
+      thoughtPatterns: [String],
+      cognitiveDistortions: [{
+        type: String,
+        example: String
+      }],
+      behavioralPatterns: [String]
+    },
+    enhancedAnalysis: {
+      type: Boolean,
+      default: false
+    },
+    aiSource: {
+      type: String,
+      enum: ['gemini', 'fallback', 'openai'],
+      default: 'fallback'
     }
   },
   wordCount: {

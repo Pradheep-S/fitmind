@@ -198,6 +198,25 @@ const JournalPage = ({ onJournalSubmitted }) => {
                       <div>
                         <h2 className="text-2xl font-bold text-gray-800">AI Analysis Complete</h2>
                         <p className="text-sm text-gray-600">Here's what we discovered about your entry</p>
+                        {/* AI Source Indicator */}
+                        <div className="flex items-center mt-1">
+                          {analysis.aiAnalysis?.aiSource === 'gemini' || analysis.aiSource === 'gemini' ? (
+                            <div className="flex items-center text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                              <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></div>
+                              Powered by Gemini AI
+                            </div>
+                          ) : (
+                            <div className="flex items-center text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                              <div className="w-2 h-2 bg-orange-500 rounded-full mr-1"></div>
+                              Fallback Analysis
+                            </div>
+                          )}
+                          {(analysis.aiAnalysis?.enhancedAnalysis || analysis.enhancedAnalysis) && (
+                            <div className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                              Enhanced ✨
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <motion.button

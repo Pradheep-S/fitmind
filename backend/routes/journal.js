@@ -42,12 +42,34 @@ router.post('/', auth, [
       mood: analysis.mood,
       confidence: analysis.confidence,
       suggestions: analysis.suggestions,
+      enhancedSuggestions: analysis.suggestions && typeof analysis.suggestions[0] === 'object' ? analysis.suggestions : [],
       summary: analysis.summary,
       aiAnalysis: {
-        emotions: analysis.emotions,
-        keywords: analysis.keywords,
-        sentiment: analysis.sentiment,
-        sentimentScore: analysis.sentimentScore
+        emotions: analysis.emotions || [],
+        keywords: analysis.keywords || [],
+        sentiment: analysis.sentiment || 'neutral',
+        sentimentScore: analysis.sentimentScore || 0,
+        psychologicalThemes: analysis.psychologicalThemes || [],
+        stressIndicators: analysis.stressIndicators || {
+          level: 'low',
+          triggers: [],
+          physicalSigns: [],
+          cognitivePatterns: []
+        },
+        positiveElements: analysis.positiveElements || [],
+        growthOpportunities: analysis.growthOpportunities || [],
+        riskFactors: analysis.riskFactors || [],
+        categories: analysis.categories || [],
+        labels: analysis.labels || [],
+        urgencyLevel: analysis.urgencyLevel || 'low',
+        followUpRecommended: analysis.followUpRecommended || false,
+        cbtInsights: analysis.cbtInsights || {
+          thoughtPatterns: [],
+          cognitiveDistortions: [],
+          behavioralPatterns: []
+        },
+        enhancedAnalysis: analysis.enhancedAnalysis || false,
+        aiSource: analysis.aiSource || 'fallback'
       }
     });
 
@@ -386,12 +408,34 @@ router.put('/:id', auth, [
       entry.mood = analysis.mood;
       entry.confidence = analysis.confidence;
       entry.suggestions = analysis.suggestions;
+      entry.enhancedSuggestions = analysis.suggestions && typeof analysis.suggestions[0] === 'object' ? analysis.suggestions : [];
       entry.summary = analysis.summary;
       entry.aiAnalysis = {
-        emotions: analysis.emotions,
-        keywords: analysis.keywords,
-        sentiment: analysis.sentiment,
-        sentimentScore: analysis.sentimentScore
+        emotions: analysis.emotions || [],
+        keywords: analysis.keywords || [],
+        sentiment: analysis.sentiment || 'neutral',
+        sentimentScore: analysis.sentimentScore || 0,
+        psychologicalThemes: analysis.psychologicalThemes || [],
+        stressIndicators: analysis.stressIndicators || {
+          level: 'low',
+          triggers: [],
+          physicalSigns: [],
+          cognitivePatterns: []
+        },
+        positiveElements: analysis.positiveElements || [],
+        growthOpportunities: analysis.growthOpportunities || [],
+        riskFactors: analysis.riskFactors || [],
+        categories: analysis.categories || [],
+        labels: analysis.labels || [],
+        urgencyLevel: analysis.urgencyLevel || 'low',
+        followUpRecommended: analysis.followUpRecommended || false,
+        cbtInsights: analysis.cbtInsights || {
+          thoughtPatterns: [],
+          cognitiveDistortions: [],
+          behavioralPatterns: []
+        },
+        enhancedAnalysis: analysis.enhancedAnalysis || false,
+        aiSource: analysis.aiSource || 'fallback'
       };
     }
 

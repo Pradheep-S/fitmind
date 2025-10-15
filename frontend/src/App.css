@@ -202,10 +202,51 @@
   box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
 }
 
-/* Analysis cards hover effect */
+/* Enhanced analysis cards hover effect */
 .analysis-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+/* Enhanced scrollbar for better visibility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.4);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.6);
+}
+
+/* Improved suggestion card animations */
+.suggestion-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.suggestion-card:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced mood glow effect */
+.mood-glow {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+  transition: all 0.4s ease-in-out;
+}
+
+.mood-glow:hover {
+  box-shadow: 0 0 50px rgba(59, 130, 246, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
 }
 
 /* Text selection */

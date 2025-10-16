@@ -4,6 +4,7 @@ import { Send, Brain, Heart, Lightbulb, Loader2, Plus, Eye, Camera } from 'lucid
 import { submitJournal } from '../services/journalService';
 import { useAuth } from '../contexts/AuthContext';
 import JournalMoodIntegration from '../components/JournalMoodIntegration';
+import VoiceInput from '../components/VoiceInput';
 
 const JournalPage = ({ onJournalSubmitted }) => {
   const [journalText, setJournalText] = useState('');
@@ -20,6 +21,16 @@ const JournalPage = ({ onJournalSubmitted }) => {
     const text = e.target.value;
     setJournalText(text);
     setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
+  };
+
+  const handleVoiceTranscript = (transcript) => {
+    // Append voice transcript to existing text with proper spacing
+    const currentText = journalText.trim();
+    const newText = currentText 
+      ? `${currentText} ${transcript}` 
+      : transcript;
+    setJournalText(newText);
+    setWordCount(newText.trim() ? newText.trim().split(/\s+/).length : 0);
   };
 
   const handleSubmit = async () => {
@@ -133,20 +144,38 @@ const JournalPage = ({ onJournalSubmitted }) => {
                 style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}
               />
               
+              {/* Voice Input Component */}
+              <div className="mt-4 p-4 bg-white/30 backdrop-blur-sm border border-white/20 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm font-medium text-gray-700">🎤 Voice Input:</span>
+                    <VoiceInput 
+                      onTranscriptUpdate={handleVoiceTranscript}
+                      className="flex-1"
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Speak naturally, pauses will be detected
+                  </div>
+                </div>
+              </div>
+              
               {/* Enhanced Mood Detection Integration */}
-              <JournalMoodIntegration
-                journalText={journalText}
-                onMoodAnalysis={(moodData) => {
-                  setMoodAnalysis(moodData);
-                  // Auto-save mood data for journal submission
-                }}
-                onJournalTextUpdate={(newText) => {
-                  setJournalText(newText);
-                  setWordCount(newText.trim() ? newText.trim().split(/\s+/).length : 0);
-                }}
-                isVisible={showMoodDetection}
-                onToggle={toggleMoodDetection}
-              />
+              <div className="mt-4">
+                <JournalMoodIntegration
+                  journalText={journalText}
+                  onMoodAnalysis={(moodData) => {
+                    setMoodAnalysis(moodData);
+                    // Auto-save mood data for journal submission
+                  }}
+                  onJournalTextUpdate={(newText) => {
+                    setJournalText(newText);
+                    setWordCount(newText.trim() ? newText.trim().split(/\s+/).length : 0);
+                  }}
+                  isVisible={showMoodDetection}
+                  onToggle={toggleMoodDetection}
+                />
+              </div>
               
               <div className="flex items-center justify-between mt-4">
                 <div className="flex items-center space-x-4">
@@ -456,6 +485,7 @@ const JournalPage = ({ onJournalSubmitted }) => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
+            { icon: "🎤", tip: "Use voice input for natural expression", desc: "Click the microphone to speak your journal" },
             { icon: "💭", tip: "Write about your feelings and emotions", desc: "Help AI understand your emotional state" },
             { icon: "📝", tip: "Describe what happened today", desc: "Context improves analysis accuracy" },
             { icon: "🙏", tip: "Include what you're grateful for", desc: "Helps identify positive patterns" },

@@ -14,6 +14,7 @@ import JournalPage from './pages/JournalPage'
 import DiaryPage from './pages/DiaryPage'
 import StatsPage from './pages/StatsPage'
 import SettingsPage from './pages/SettingsPage'
+import EnhancedMoodDetectionPage from './pages/EnhancedMoodDetectionPage'
 import AuthContainer from './pages/AuthContainer'
 
 // Main App Component that uses authentication
@@ -46,6 +47,7 @@ function AppContent() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/journal" element={<JournalPage />} />
+              <Route path="/mood" element={<EnhancedMoodDetectionPage />} />
               <Route path="/diary" element={<DiaryPage />} />
               <Route path="/stats" element={<StatsPage />} />
               <Route path="/settings" element={<SettingsPage />} />

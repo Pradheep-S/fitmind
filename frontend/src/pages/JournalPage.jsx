@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Brain, Heart, Lightbulb, Loader2, Plus } from 'lucide-react';
+import { Send, Brain, Heart, Lightbulb, Loader2, Plus, Eye, Camera } from 'lucide-react';
 import { submitJournal } from '../services/journalService';
 import { useAuth } from '../contexts/AuthContext';
+import JournalMoodIntegration from '../components/JournalMoodIntegration';
 
 const JournalPage = ({ onJournalSubmitted }) => {
   const [journalText, setJournalText] = useState('');
@@ -10,6 +11,9 @@ const JournalPage = ({ onJournalSubmitted }) => {
   const [analysis, setAnalysis] = useState(null);
   const [wordCount, setWordCount] = useState(0);
   const [showWritingArea, setShowWritingArea] = useState(true);
+  const [showMoodDetection, setShowMoodDetection] = useState(false);
+  const [moodAnalysis, setMoodAnalysis] = useState(null);
+  const [isMoodAnalyzing, setIsMoodAnalyzing] = useState(false);
   const { checkToken, isAuthenticated, user } = useAuth();
 
   const handleTextChange = (e) => {
@@ -49,6 +53,13 @@ const JournalPage = ({ onJournalSubmitted }) => {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const toggleMoodDetection = () => {
+    setShowMoodDetection(!showMoodDetection);
+    if (showMoodDetection) {
+      setMoodAnalysis(null);
     }
   };
 
@@ -122,10 +133,41 @@ const JournalPage = ({ onJournalSubmitted }) => {
                 style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}
               />
               
+              {/* Enhanced Mood Detection Integration */}
+              <JournalMoodIntegration
+                journalText={journalText}
+                onMoodAnalysis={(moodData) => {
+                  setMoodAnalysis(moodData);
+                  // Auto-save mood data for journal submission
+                }}
+                onJournalTextUpdate={(newText) => {
+                  setJournalText(newText);
+                  setWordCount(newText.trim() ? newText.trim().split(/\s+/).length : 0);
+                }}
+                isVisible={showMoodDetection}
+                onToggle={toggleMoodDetection}
+              />
+              
               <div className="flex items-center justify-between mt-4">
-                <span className="text-sm text-gray-500">
-                  {wordCount} words
-                </span>
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-500">
+                    {wordCount} words
+                  </span>
+                  
+                  <motion.button
+                    onClick={toggleMoodDetection}
+                    className={`flex items-center space-x-2 text-sm px-3 py-1 rounded-lg transition-all duration-200 ${
+                      showMoodDetection 
+                        ? 'bg-purple-100 text-purple-700 border border-purple-300' 
+                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-purple-50 hover:text-purple-600'
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Eye size={16} />
+                    <span>{showMoodDetection ? 'Hide' : 'Add'} Mood Detection</span>
+                  </motion.button>
+                </div>
                 
                 <motion.button
                   onClick={handleSubmit}

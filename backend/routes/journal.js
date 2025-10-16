@@ -28,11 +28,38 @@ router.post('/', auth, [
       });
     }
 
-    const { text, date } = req.body;
+    const { text, date, faceAnalysis } = req.body;
 
     // Get AI analysis
     console.log('Analyzing journal entry for user:', req.user._id);
     const analysis = await aiService.analyzeJournal(text);
+    
+    // Process face analysis data if provided
+    let processedFaceAnalysis = null;
+    if (faceAnalysis && faceAnalysis.enabled) {
+      console.log('Processing face analysis data...');
+      processedFaceAnalysis = {
+        enabled: true,
+        mood: faceAnalysis.mood,
+        confidence: faceAnalysis.confidence || 0,
+        rawEmotion: faceAnalysis.rawEmotion,
+        expressions: faceAnalysis.expressions || {},
+        faceCount: faceAnalysis.faceCount || 0,
+        moodInsights: faceAnalysis.moodInsights,
+        suggestions: faceAnalysis.suggestions || [],
+        analysisTimestamp: new Date(),
+        analysisMethod: faceAnalysis.method || 'face-analysis',
+        fallbackReason: faceAnalysis.fallbackReason,
+        combinedWithText: Boolean(text && text.trim())
+      };
+      
+      // If face analysis confidence is high, use it to influence text mood analysis
+      if (faceAnalysis.confidence > 0.7 && analysis.confidence < 0.8) {
+        console.log('Using face analysis mood as primary mood');
+        analysis.mood = faceAnalysis.mood;
+        analysis.confidence = Math.max(analysis.confidence, faceAnalysis.confidence * 0.9);
+      }
+    }
     
     // Create new journal entry
     const journalEntry = new Journal({
@@ -70,6 +97,9 @@ router.post('/', auth, [
         },
         enhancedAnalysis: analysis.enhancedAnalysis || false,
         aiSource: analysis.aiSource || 'fallback'
+      },
+      faceAnalysis: processedFaceAnalysis || {
+        enabled: false
       }
     });
 

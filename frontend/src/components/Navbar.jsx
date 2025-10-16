@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Book, BarChart3, Settings, Home, User, LogOut, PenTool, ChevronDown } from 'lucide-react';
+import { Book, BarChart3, Settings, Home, User, LogOut, PenTool, ChevronDown, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -25,6 +25,7 @@ const Navbar = () => {
   const navItems = [
     { id: 'home', label: 'Home', icon: Home, path: '/' },
     { id: 'journal', label: 'Journal', icon: PenTool, path: '/journal' },
+    { id: 'mood', label: 'Mood Detection', icon: Eye, path: '/mood' },
     { id: 'diary', label: 'My Diary', icon: Book, path: '/diary' },
     { id: 'stats', label: 'Stats', icon: BarChart3, path: '/stats' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },

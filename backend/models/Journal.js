@@ -138,6 +138,58 @@ const journalSchema = new mongoose.Schema({
       default: 'fallback'
     }
   },
+  faceAnalysis: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    mood: {
+      type: String,
+      enum: ['happy', 'sad', 'anxious', 'grateful', 'excited', 'calm', 'stressed', 'thoughtful', 'content', 'overwhelmed', 'frustrated', 'hopeful', 'lonely', 'confident', 'uncertain'],
+      required: false
+    },
+    confidence: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: 0
+    },
+    rawEmotion: {
+      type: String,
+      enum: ['happy', 'sad', 'angry', 'fearful', 'disgusted', 'surprised', 'neutral'],
+      required: false
+    },
+    expressions: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {}
+    },
+    faceCount: {
+      type: Number,
+      default: 0
+    },
+    moodInsights: {
+      type: String,
+      trim: true
+    },
+    suggestions: [String],
+    analysisTimestamp: {
+      type: Date,
+      default: Date.now
+    },
+    analysisMethod: {
+      type: String,
+      enum: ['face-analysis', 'fallback', 'combined'],
+      default: 'face-analysis'
+    },
+    fallbackReason: {
+      type: String,
+      trim: true
+    },
+    combinedWithText: {
+      type: Boolean,
+      default: false
+    }
+  },
   wordCount: {
     type: Number,
     default: 0
@@ -163,5 +215,8 @@ journalSchema.index({ date: -1 });
 journalSchema.index({ mood: 1 });
 journalSchema.index({ user: 1, date: -1 });
 journalSchema.index({ user: 1 });
+journalSchema.index({ 'faceAnalysis.enabled': 1 });
+journalSchema.index({ 'faceAnalysis.mood': 1 });
+journalSchema.index({ user: 1, 'faceAnalysis.enabled': 1 });
 
 module.exports = mongoose.model('Journal', journalSchema);

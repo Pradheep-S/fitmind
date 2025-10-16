@@ -10,14 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-backend-webgl": "^4.22.0",
     "axios": "^1.10.0",
     "date-fns": "^4.1.0",
+    "face-api.js": "^0.22.2",
     "framer-motion": "^12.23.6",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.7.0",
-    "recharts": "^3.1.0"
+    "recharts": "^3.1.0",
+    "webcam-easy": "^1.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
